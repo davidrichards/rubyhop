@@ -9,6 +9,7 @@ class Player
   def initialize level
     @level = level
     @window = @level.window
+    @skilled = false
     # position
     start!
     @gravity  = -0.25
@@ -20,6 +21,12 @@ class Player
     @rise = Gosu::Image.new @window, get_my_file("rubyguy-rise.png")
     @fall = Gosu::Image.new @window, get_my_file("rubyguy-fall.png")
     @dead = Gosu::Image.new @window, get_my_file("rubyguy-dead.png")
+  end
+  def skilled?
+    @skilled
+  end
+  def toggle_skilled!
+    @skilled = !@skilled
   end
   def hop
     if @alive
@@ -78,7 +85,24 @@ class Hoop
     @x = @y = 0
     @active = true
   end
+  def support_factor
+    @support_factor ||= 250
+  end
   def miss player
+    if player.alive &&
+      player.skilled? &&
+      (@x - player.x) <= 100 &&
+      (@x - player.x) >= 12 &&
+
+      # split the difference
+      difference = @y - player.y
+      adjustment = difference / 20
+      adjustment = -support_factor if adjustment < -support_factor
+      adjustment = support_factor if adjustment > support_factor
+
+      player.y += adjustment
+      # player.y = @y
+    end
     if (@x - player.x).abs < 12 &&
        (@y - player.y).abs > 72
        # the player missed the hoop
@@ -159,6 +183,18 @@ class HopLevel
   def button_down id
     quit!       if id == Gosu::KbEscape
     @player.hop if id == Gosu::KbSpace
+    if id == Gosu::KbG
+      @player.toggle_skilled!
+      if @player.skilled?
+        @window.caption = "Ruby Hop (assisted mode)"
+      else
+        @window.caption = "Ruby Hop"
+      end
+    end
+    if id == Gosu::KbS
+      @player.toggle_skilled!
+      @window.caption = "Ruby Hop"
+    end
   end
 
   def update
